@@ -124,7 +124,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     onClick={() => setView(v)}
                     className={`px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${view === v ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400'}`}
                   >
-                    {v === 'results' ? 'Souhrn' : v === 'analysis' ? 'Strom' : 'Flow'}
+                    {v === 'results' ? 'SOUHRNNÉ VÝSLEDKY' : v === 'analysis' ? 'STROMOVÁ STRUKTURA' : 'PRŮCHODY'}
                   </button>
                 ))}
               </div>

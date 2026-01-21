@@ -27,18 +27,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sessions, activeSessionId, onSt
     return selectedSession.results.filter(r => r.questionIndex === selectedQuestionIndex);
   }, [selectedSession, selectedQuestionIndex]);
 
-  const stats = useMemo(() => {
+const stats = useMemo(() => {
     if (!selectedSession || !selectedSession.results) {
       return { users: 0, totalTasks: 0, successRate: 0 };
     }
-    const uniqueUsers = new Set(selectedSession.results.map(r => r.userId)).size;
+    
+    // Získáme pole všech user_id z výsledků
+    const allUserIds = selectedSession.results.map((r: any) => r.user_id || r.userId);
+    
+    // Set vytvoří unikátní seznam (odstraní duplicity)
+    const uniqueUsersCount = new Set(allUserIds.filter(id => id !== undefined)).size;
+    
     const totalTasks = selectedSession.results.length;
     const successes = selectedSession.results.filter(r => {
       const q = QUESTIONS[r.questionIndex];
-      return q && r.targetFound === q.target;
+      return q && r.target_found === q.target;
     }).length;
+    
     const rate = totalTasks > 0 ? Math.round((successes / totalTasks) * 100) : 0;
-    return { users: uniqueUsers, totalTasks, successRate: rate };
+    
+    return { 
+      users: uniqueUsersCount, 
+      totalTasks, 
+      successRate: rate 
+    };
   }, [selectedSession]);
 
   return (

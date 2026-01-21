@@ -13,12 +13,15 @@ const App: React.FC = () => {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   
-  // Unikátní ID uživatele pro rozlišení výsledků v rámci jedné session
+  // Zajištění unikátního ID pro každé zařízení/prohlížeč
   const [userId] = useState(() => {
-    const saved = localStorage.getItem('tree_test_user_id');
-    if (saved) return saved;
-    const newId = 'user_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('tree_test_user_id', newId);
+    const storageKey = 'tree_test_unique_user_id';
+    const saved = localStorage.getItem(storageKey);
+    if (saved && saved.startsWith('user_')) return saved;
+    
+    // Vygenerujeme skutečně náhodné ID
+    const newId = `user_${Math.random().toString(36).substring(2, 15)}_${Date.now().toString(36)}`;
+    localStorage.setItem(storageKey, newId);
     return newId;
   });
 

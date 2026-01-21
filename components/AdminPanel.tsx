@@ -29,13 +29,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sessions, activeSessionId, onSt
   const stats = useMemo(() => {
     if (!selectedSession || !selectedSession.results) return { users: 0, totalTasks: 0, successRate: 0 };
     
-    const results = selectedSession.results as any[]; // Použití any pro obejití přísné kontroly
-    const uniqueUsers = new Set(results.map(r => r.user_id || r.userId)).size;
+    const results = selectedSession.results;
+    const uniqueUsers = new Set(results.map(r => r.userId)).size;
     const totalTasks = results.length;
     const successes = results.filter(r => {
       const q = QUESTIONS[r.questionIndex];
-      const found = r.target_found || r.targetFound;
-      return q && found === q.target;
+      return q && r.targetFound === q.target;
     }).length;
     
     return { 
@@ -47,7 +46,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sessions, activeSessionId, onSt
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      {/* Sidebar s výběrem relací */}
       <div className="lg:col-span-3 space-y-6">
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
           <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Relace</h3>
@@ -67,7 +65,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sessions, activeSessionId, onSt
           <button
             onClick={activeSessionId ? onEndSession : onStartSession}
             className={`w-full mt-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-              activeSessionId ? 'bg-red-50 text-red-600' : 'bg-[#2870ED] text-white shadow-lg shadow-blue-100'
+              activeSessionId ? 'bg-red-50 text-red-600' : 'bg-[#2870ED] text-white shadow-lg'
             }`}
           >
             {activeSessionId ? 'Ukončit test' : 'Nová relace'}
@@ -92,7 +90,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sessions, activeSessionId, onSt
         )}
       </div>
 
-      {/* Hlavní plocha */}
       <div className="lg:col-span-9">
         {selectedSession ? (
           <>
@@ -135,12 +132,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ sessions, activeSessionId, onSt
                     <tbody className="divide-y divide-gray-50 text-[11px]">
                       {filteredResults.map((res: any, i) => {
                         const q = QUESTIONS[res.questionIndex];
-                        const found = res.target_found || res.targetFound;
-                        const isCorrect = q && found === q.target;
+                        const isCorrect = q && res.targetFound === q.target;
                         return (
                           <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-8 py-4 font-mono text-gray-400">{res.user_id || res.userId}</td>
-                            <td className="px-8 py-4 font-black text-gray-800 uppercase tracking-tight">Úkol {res.questionIndex + 1}</td>
+                            <td className="px-8 py-4 font-mono text-gray-400">{res.userId}</td>
+                            <td className="px-8 py-4 font-black text-gray-800 uppercase tracking-tight">
+                               Úkol {typeof res.questionIndex === 'number' ? res.questionIndex + 1 : '?'}
+                            </td>
                             <td className="px-8 py-4 text-right">
                               <span className={`px-3 py-1 rounded-full font-black text-[9px] uppercase ${isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 {isCorrect ? 'Úspěch' : 'Chyba'}

@@ -4,7 +4,7 @@ import Navigation from './components/Navigation';
 import AdminPanel from './components/AdminPanel';
 import StudentMode from './components/StudentMode';
 import AdminLogin from './components/AdminLogin';
-// IMPORTUJEME TVOJE PŘIPOJENÍ
+// IMPORT SUPABASE KLIENTA
 import { supabase } from './supabase'; 
 
 const App: React.FC = () => {
@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   
+  // Unikátní ID uživatele pro rozlišení výsledků v rámci jedné session
   const [userId] = useState(() => {
     const saved = localStorage.getItem('tree_test_user_id');
     if (saved) return saved;
@@ -21,31 +22,33 @@ const App: React.FC = () => {
     return newId;
   });
 
-  // 1. FUNKCE PRO NAČTENÍ DAT ZE SUPABASE
+  // 1. FUNKCE PRO NAČTENÍ A MAPOVÁNÍ DAT
   const loadDataFromSupabase = useCallback(async () => {
+    // Načteme sessions a k nim připojené results
     const { data, error } = await supabase
       .from('sessions')
       .select('*, results(*)');
 
     if (error) {
-      console.error("Chyba při načítání ze Supabase:", error);
+      console.error("Chyba při komunikaci se Supabase:", error.message);
       return;
     }
 
     if (data) {
-      const validated: Session[] = data.map((s: any) => ({
+      // Důležité: Mapování názvů z DB (snake_case) na TypeScript (camelCase)
+      const formatted: Session[] = data.map((s: any) => ({
         id: s.id,
         name: s.name,
         createdAt: new Date(s.created_at).getTime(),
-        isActive: s.is_active,
+        isActive: s.is_active, // <--- Zde probíhá ten důležitý překlad
         isCompleted: !s.is_active,
         results: Array.isArray(s.results) ? s.results : []
       }));
       
-      setSessions(validated);
+      setSessions(formatted);
       
-      // Automaticky najít a nastavit ID aktivní relace
-      const active = validated.find(s => s.isActive === true);
+      // Hledáme relaci, která je aktuálně aktivní
+      const active = formatted.find(s => s.isActive === true);
       if (active) {
         setCurrentSessionId(active.id);
       } else {
@@ -54,16 +57,23 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // 2. NAČTENÍ PŘI STARTU A NASTAVENÍ REÁLNÉHO ČASU
+  // 2. USEEFFECT PRO INICIALIZACI A REALTIME ODBĚR
   useEffect(() => {
     loadDataFromSupabase();
 
-    // Sledování změn v DB v reálném čase
+    // Přihlášení k odběru změn v databázi (Realtime)
     const channel = supabase
-      .channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-        loadDataFromSupabase();
-      })
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'sessions' }, 
+        () => loadDataFromSupabase()
+      )
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'results' }, 
+        () => loadDataFromSupabase()
+      )
       .subscribe();
 
     return () => {
@@ -71,13 +81,17 @@ const App: React.FC = () => {
     };
   }, [loadDataFromSupabase]);
 
-  // 3. START NOVÉ RELACE V SUPABASE
+  // 3. LOGIKA PRO START NOVÉHO TESTOVÁNÍ
   const startNewSession = useCallback(async () => {
     const timestamp = Date.now();
-    const sessionName = prompt('Zadejte název relace:', `Relace ${new Date(timestamp).toLocaleDateString()}`);
+    const sessionName = prompt('Zadejte název relace (např. Workshop IT):', `Relace ${new Date(timestamp).toLocaleDateString()}`);
     
     if (!sessionName) return;
 
+    // Nejdříve pro jistotu ukončíme všechny ostatní aktivní relace
+    await supabase.from('sessions').update({ is_active: false }).eq('is_active', true);
+
+    // Vložíme novou relaci
     const { data, error } = await supabase
       .from('sessions')
       .insert([{ name: sessionName, is_active: true }])
@@ -85,15 +99,14 @@ const App: React.FC = () => {
       .single();
 
     if (error) {
-      alert('Chyba při vytváření relace v databázi.');
-      console.error(error);
+      alert('Nepodařilo se vytvořit relaci v databázi.');
     } else if (data) {
       setCurrentSessionId(data.id);
       setMode(AppMode.STUDENT);
     }
   }, []);
 
-  // 4. UKONČENÍ RELACE V SUPABASE
+  // 4. UKONČENÍ TESTOVÁNÍ
   const endSession = useCallback(async () => {
     if (!currentSessionId) return;
 
@@ -109,7 +122,7 @@ const App: React.FC = () => {
     }
   }, [currentSessionId]);
 
-  // 5. ODESLÁNÍ VÝSLEDKU DO SUPABASE
+  // 5. ODESLÁNÍ VÝSLEDKU OD STUDENTA
   const submitResult = useCallback(async (result: TestResult) => {
     if (!currentSessionId) return;
 
@@ -124,7 +137,7 @@ const App: React.FC = () => {
       }]);
 
     if (error) {
-      console.error('Chyba při odesílání výsledku:', error);
+      console.error('Výsledek se nepodařilo uložit do cloudu:', error);
     }
   }, [currentSessionId, userId]);
 
@@ -165,8 +178,9 @@ const App: React.FC = () => {
       </main>
 
       <footer className="p-8 text-center">
-         <div className="text-[10px] text-gray-300 font-medium uppercase tracking-[0.2em]">
-           Cloud Database Active • Real-time Sync
+         <div className="text-[10px] text-gray-300 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+           <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+           Cloud Database Connected • Real-time Sync Active
          </div>
       </footer>
     </div>

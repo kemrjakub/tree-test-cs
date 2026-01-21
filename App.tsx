@@ -4,6 +4,8 @@ import Navigation from './components/Navigation';
 import AdminPanel from './components/AdminPanel';
 import StudentMode from './components/StudentMode';
 import AdminLogin from './components/AdminLogin';
+// IMPORTUJEME TVOJE PŘIPOJENÍ
+import { supabase } from './supabase'; 
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>(AppMode.STUDENT);
@@ -19,68 +21,112 @@ const App: React.FC = () => {
     return newId;
   });
 
-  // Načtení dat s validací struktury
-  useEffect(() => {
-    const saved = localStorage.getItem('tree_test_sessions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          // Fix: Ensure name and createdAt exist for older data
-          const validated = parsed.map((s: any) => ({
-            ...s,
-            name: s.name || `Relace ${s.id}`,
-            createdAt: s.createdAt || (s.id.startsWith('session_') ? parseInt(s.id.split('_')[1]) || Date.now() : Date.now()),
-            results: Array.isArray(s.results) ? s.results : []
-          }));
-          setSessions(validated);
-          const active = validated.find((s: Session) => s.isActive === true);
-          if (active) setCurrentSessionId(active.id);
-        }
-      } catch (e) {
-        console.error("Chyba načítání:", e);
+  // 1. FUNKCE PRO NAČTENÍ DAT ZE SUPABASE
+  const loadDataFromSupabase = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*, results(*)');
+
+    if (error) {
+      console.error("Chyba při načítání ze Supabase:", error);
+      return;
+    }
+
+    if (data) {
+      const validated: Session[] = data.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        createdAt: new Date(s.created_at).getTime(),
+        isActive: s.is_active,
+        isCompleted: !s.is_active,
+        results: Array.isArray(s.results) ? s.results : []
+      }));
+      
+      setSessions(validated);
+      
+      // Automaticky najít a nastavit ID aktivní relace
+      const active = validated.find(s => s.isActive === true);
+      if (active) {
+        setCurrentSessionId(active.id);
+      } else {
+        setCurrentSessionId(null);
       }
     }
   }, []);
 
-  // Synchronizace s LocalStorage
+  // 2. NAČTENÍ PŘI STARTU A NASTAVENÍ REÁLNÉHO ČASU
   useEffect(() => {
-    if (sessions.length > 0 || localStorage.getItem('tree_test_sessions')) {
-      localStorage.setItem('tree_test_sessions', JSON.stringify(sessions));
-    }
-  }, [sessions]);
+    loadDataFromSupabase();
 
-  // Fix: Add name and createdAt to new sessions
-  const startNewSession = useCallback(() => {
-    const timestamp = Date.now();
-    const newId = `session_${timestamp}`;
-    const newSession: Session = { 
-      id: newId, 
-      name: `Relace ${new Date(timestamp).toLocaleDateString()} ${new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`,
-      createdAt: timestamp,
-      isActive: true, 
-      isCompleted: false, 
-      results: [] 
+    // Sledování změn v DB v reálném čase
+    const channel = supabase
+      .channel('db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+        loadDataFromSupabase();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
-    setSessions(prev => [newSession, ...prev]);
-    setCurrentSessionId(newId);
-    setMode(AppMode.STUDENT);
+  }, [loadDataFromSupabase]);
+
+  // 3. START NOVÉ RELACE V SUPABASE
+  const startNewSession = useCallback(async () => {
+    const timestamp = Date.now();
+    const sessionName = prompt('Zadejte název relace:', `Relace ${new Date(timestamp).toLocaleDateString()}`);
+    
+    if (!sessionName) return;
+
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert([{ name: sessionName, is_active: true }])
+      .select()
+      .single();
+
+    if (error) {
+      alert('Chyba při vytváření relace v databázi.');
+      console.error(error);
+    } else if (data) {
+      setCurrentSessionId(data.id);
+      setMode(AppMode.STUDENT);
+    }
   }, []);
 
-  const endSession = useCallback(() => {
+  // 4. UKONČENÍ RELACE V SUPABASE
+  const endSession = useCallback(async () => {
     if (!currentSessionId) return;
-    setSessions(prev => prev.map(s => 
-      s.id === currentSessionId ? { ...s, isActive: false, isCompleted: true } : s
-    ));
-    setCurrentSessionId(null);
+
+    const { error } = await supabase
+      .from('sessions')
+      .update({ is_active: false })
+      .eq('id', currentSessionId);
+
+    if (error) {
+      console.error('Chyba při ukončování relace:', error);
+    } else {
+      setCurrentSessionId(null);
+    }
   }, [currentSessionId]);
 
-  const submitResult = useCallback((result: TestResult) => {
+  // 5. ODESLÁNÍ VÝSLEDKU DO SUPABASE
+  const submitResult = useCallback(async (result: TestResult) => {
     if (!currentSessionId) return;
-    setSessions(prev => prev.map(s => 
-      s.id === currentSessionId ? { ...s, results: [...(s.results || []), result] } : s
-    ));
-  }, [currentSessionId]);
+
+    const { error } = await supabase
+      .from('results')
+      .insert([{
+        session_id: currentSessionId,
+        user_id: userId,
+        question_index: result.questionIndex,
+        target_found: result.targetFound,
+        full_history: result.fullHistory
+      }]);
+
+    if (error) {
+      console.error('Chyba při odesílání výsledku:', error);
+    }
+  }, [currentSessionId, userId]);
 
   const handleLoginSuccess = () => {
     setIsAdminAuthenticated(true);
@@ -119,17 +165,9 @@ const App: React.FC = () => {
       </main>
 
       <footer className="p-8 text-center">
-         <button 
-           onClick={() => {
-             if (window.confirm('Opravdu chcete smazat všechna data?')) {
-               localStorage.clear(); 
-               window.location.reload();
-             }
-           }} 
-           className="text-[10px] text-gray-200 opacity-30 hover:opacity-100 hover:text-red-400 transition-all font-normal cursor-pointer"
-         >
-           Resetovat aplikaci (pro vývojáře)
-         </button>
+         <div className="text-[10px] text-gray-300 font-medium uppercase tracking-[0.2em]">
+           Cloud Database Active • Real-time Sync
+         </div>
       </footer>
     </div>
   );

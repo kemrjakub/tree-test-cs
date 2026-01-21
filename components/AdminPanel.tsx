@@ -3,6 +3,7 @@ import { Session } from '../types';
 import { QUESTIONS } from '../constants';
 import TreeDiagram from './TreeDiagram';
 import PathVisualization from './PathVisualization';
+import PathMap from './PathMap'; // IMPORT NOVÉHO KOMPONENTU
 
 interface AdminPanelProps {
   sessions: Session[];
@@ -20,7 +21,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   onDeleteSession 
 }) => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(activeSessionId);
-  const [view, setView] = useState<'results' | 'analysis' | 'viz'>('results');
+  // Rozšířeno o stav 'map'
+  const [view, setView] = useState<'results' | 'analysis' | 'viz' | 'map'>('results');
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | 'all'>('all');
 
   const selectedSession = useMemo(() => {
@@ -41,7 +43,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     const totalTasks = results.length;
     const successes = results.filter(r => {
       const q = QUESTIONS[r.questionIndex];
-      return q && r.targetFound === q.target;
+      const found = r.targetFound || r.target_found;
+      return q && found === q.target;
     }).length;
     
     return { 
@@ -117,14 +120,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         {selectedSession ? (
           <>
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-              <div className="flex bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm w-fit">
-                {['results', 'analysis', 'viz'].map((v: any) => (
+              <div className="flex bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm w-fit overflow-x-auto">
+                {['results', 'analysis', 'viz', 'map'].map((v: any) => (
                   <button 
                     key={v}
                     onClick={() => setView(v)}
-                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${view === v ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400'}`}
+                    className={`px-4 md:px-6 py-2.5 rounded-xl text-[10px] font-black tracking-widest transition-all whitespace-nowrap ${view === v ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400'}`}
                   >
-                    {v === 'results' ? 'VÝSLEDKY' : v === 'analysis' ? 'STROM' : 'PRŮCHODY'}
+                    {v === 'results' ? 'VÝSLEDKY' : v === 'analysis' ? 'TABULKA' : v === 'viz' ? 'PRŮCHODY' : 'MAPA'}
                   </button>
                 ))}
               </div>
@@ -155,7 +158,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <tbody className="divide-y divide-gray-50 text-[11px]">
                       {filteredResults.map((res: any, i) => {
                         const q = QUESTIONS[res.questionIndex];
-                        const isCorrect = q && res.targetFound === q.target;
+                        const found = res.targetFound || res.target_found;
+                        const isCorrect = q && found === q.target;
                         return (
                           <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                             <td className="px-8 py-4 font-mono text-gray-400">{res.userId}</td>
@@ -176,6 +180,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               )}
               {view === 'analysis' && <TreeDiagram results={filteredResults} />}
               {view === 'viz' && <PathVisualization results={filteredResults} />}
+              {view === 'map' && <PathMap results={filteredResults} />}
             </div>
           </>
         ) : (

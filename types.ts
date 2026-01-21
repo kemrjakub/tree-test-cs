@@ -1,18 +1,17 @@
-
 export interface CategoryNode {
   name: string;
   children?: CategoryNode[];
 }
 
 export interface TestResult {
-  session_id?: string;    // pro Supabase
-  user_id?: string;       // pro Supabase
-  userId?: string;        // pro starší kód
+  session_id?: string;
+  user_id?: string;
+  userId?: string;
   questionIndex: number;
-  target_found?: string;  // pro Supabase
-  targetFound?: string;   // pro starší kód
-  full_history?: string[]; // pro Supabase
-  fullHistory?: string[];  // pro starší kód
+  target_found?: string;
+  targetFound?: string;
+  full_history?: string[];
+  fullHistory?: string[];
   timestamp?: number;
 }
 

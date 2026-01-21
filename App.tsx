@@ -127,7 +127,7 @@ const App: React.FC = () => {
         )}
       </main>
       <footer className="p-8 text-center text-[10px] text-gray-300 font-bold uppercase tracking-widest">
-         Powered by Interaction Design Team • Cloud Connected • {userId}
+         Powered by Interaction Design Team • {userId}
       </footer>
       
     </div>

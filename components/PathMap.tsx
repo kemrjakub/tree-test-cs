@@ -10,13 +10,12 @@ interface PathMapProps {
 interface Point { x: number; y: number; name: string; children: Point[]; depth: number }
 
 const PathMap: React.FC<PathMapProps> = ({ results }) => {
-  // ZVĚTŠENÉ PLÁTNO: Aby se i hluboké stromy vešly bez ořezu
   const virtualWidth = 2500; 
   const virtualHeight = 2500;
   const centerX = virtualWidth / 2;
   const centerY = virtualHeight / 2;
 
-  const [scale, setScale] = useState(0.8); // Začneme trochu oddáleně, aby byl vidět střed
+  const [scale, setScale] = useState(0.8);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,7 +50,6 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
     const points: Point[] = [];
     const layout = (node: CategoryNode, angleStart: number, angleEnd: number, depth: number): Point => {
       const angle = (angleStart + angleEnd) / 2;
-      // VĚTŠÍ ROZESTUPY: 180px mezi úrovněmi pro maximální přehlednost
       const radius = depth * 180; 
       const x = centerX + radius * Math.cos(angle);
       const y = centerY + radius * Math.sin(angle);
@@ -73,7 +71,7 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
   }, [results]);
 
   const handleWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) { // Zoom pouze s CTRL/CMD pro lepší UX
+    if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
         setScale(prev => Math.min(Math.max(0.2, prev * delta), 4));
@@ -105,7 +103,6 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
       onMouseLeave={() => setIsDragging(false)}
       onMouseMove={handleMouseMove}
     >
-      {/* Ovládací prvky */}
       <div className="absolute top-6 left-6 z-10 pointer-events-none">
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Interaktivní Flow Mapa</h3>
         <p className="text-[9px] text-gray-300 mt-1 font-bold">TAŽENÍ: Posun • CTRL+KOLEČKO: Zoom</p>
@@ -117,7 +114,6 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
         </button>
       </div>
       
-      {/* SVG PLÁTNO S OPRAVENÝM OŘEZEM */}
       <div 
         className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out"
         style={{
@@ -129,9 +125,8 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
           width={virtualWidth} 
           height={virtualHeight} 
           viewBox={`0 0 ${virtualWidth} ${virtualHeight}`}
-          style={{ overflow: 'visible' }} // KLÍČOVÁ OPRAVA: Zamezí uříznutí prvků na okraji
+          style={{ overflow: 'visible' }}
         >
-          {/* Spojnice */}
           {data.points.map(p => p.children.map(child => {
             const weight = data.connections[`${p.name}->${child.name}`] || 0;
             if (weight === 0) return null;
@@ -146,7 +141,6 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
             );
           }))}
 
-          {/* Uzly (Koláčové grafy) */}
           {data.points.map(p => {
             const s = data.stats[p.name];
             if (!s || s.total === 0) return null;
@@ -175,23 +169,10 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
           })}
         </svg>
       </div>
-      
-      {/* Legenda */}
-      <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur-sm border border-gray-100 p-4 rounded-2xl shadow-sm pointer-events-none">
-        <div className="flex items-center gap-3 mb-2">
-            <span className="w-3 h-3 bg-green-400 rounded-full shadow-sm"></span>
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Správný směr</span>
-        </div>
-        <div className="flex items-center gap-3">
-            <span className="w-3 h-3 bg-red-300 rounded-full shadow-sm"></span>
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Zbloudění</span>
-        </div>
-      </div>
     </div>
   );
 };
 
-// Pomocné funkce pro výpočet SVG cest
 function describeArc(x: number, y: number, radius: number, startAngle: number, endAngle: number){
     const start = polarToCartesian(x, y, radius, endAngle);
     const end = polarToCartesian(x, y, radius, startAngle);

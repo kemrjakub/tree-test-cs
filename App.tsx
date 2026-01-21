@@ -79,3 +79,114 @@ const App: React.FC = () => {
 
     const { data, error } = await supabase
       .from('sessions')
+      .insert([{ name: sessionName, is_active: true }])
+      .select()
+      .single();
+
+    if (error) {
+      alert('Chyba při vytváření relace');
+      return;
+    }
+
+    if (data) {
+      setCurrentSessionId(data.id);
+      setMode(AppMode.STUDENT);
+    }
+  }, []);
+
+  const endSession = useCallback(async () => {
+    if (!currentSessionId) return;
+    const { error } = await supabase
+      .from('sessions')
+      .update({ is_active: false })
+      .eq('id', currentSessionId);
+
+    if (!error) {
+      setCurrentSessionId(null);
+      loadDataFromSupabase();
+    }
+  }, [currentSessionId, loadDataFromSupabase]);
+
+  const deleteSession = useCallback(async (sessionId: string) => {
+    if (!window.confirm('Opravdu chcete tuto relaci a všechny její výsledky nenávratně smazat?')) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    if (error) {
+      alert('Chyba při mazání relace: ' + error.message);
+    } else {
+      loadDataFromSupabase();
+    }
+  }, [loadDataFromSupabase]);
+
+  const submitResult = useCallback(async (result: TestResult) => {
+    if (!currentSessionId) return;
+
+    const { error } = await supabase
+      .from('results')
+      .insert([{
+        session_id: currentSessionId,
+        user_id: userId,
+        question_index: result.questionIndex,
+        target_found: result.targetFound,
+        full_history: result.fullHistory
+      }]);
+
+    if (error) {
+      console.error('Nepodařilo se uložit do cloudu:', error);
+    }
+  }, [currentSessionId, userId]);
+
+  const handleLoginSuccess = () => {
+    setIsAdminAuthenticated(true);
+  };
+
+  const activeSession = sessions.find(s => s && s.id === currentSessionId) || null;
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Navigation 
+        mode={mode} 
+        setMode={setMode} 
+        isActiveSession={!!currentSessionId}
+        isAdminAuthenticated={isAdminAuthenticated}
+      />
+      
+      <main className="flex-grow container mx-auto px-4 py-8">
+        {mode === AppMode.ADMIN ? (
+          isAdminAuthenticated ? (
+            <AdminPanel 
+              sessions={sessions} 
+              activeSessionId={currentSessionId}
+              onStartSession={startNewSession}
+              onEndSession={endSession}
+              onDeleteSession={deleteSession}
+            />
+          ) : (
+            <AdminLogin onLoginSuccess={handleLoginSuccess} />
+          )
+        ) : (
+          <StudentMode 
+            userId={userId}
+            activeSession={activeSession}
+            onSubmitResult={submitResult}
+          />
+        )}
+      </main>
+
+      <footer className="p-8 text-center">
+         <div className="text-[10px] text-gray-300 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+           <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+           Cloud Database Connected • Real-time Sync Active • {userId}
+         </div>
+      </footer>
+    </div>
+  );
+};
+
+export default App;

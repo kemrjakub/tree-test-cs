@@ -41,7 +41,7 @@ const PathVisualization: React.FC<PathVisualizationProps> = ({ results }) => {
   return (
     <div className="bg-white rounded-3xl border border-gray-200 p-8 shadow-sm overflow-hidden flex flex-col">
       <div className="mb-8 border-b border-gray-100 pb-6">
-        <h3 className="text-xl font-semibold text-gray-900 leading-none mb-2 tracking-tight">Mapa průtoku (flow)</h3>
+        <h3 className="text-xl font-semibold text-gray-900 leading-none mb-2 tracking-tight">Vizualizace průchodů</h3>
         <p className="text-gray-400 text-[10px] font-semibold tracking-[0.2em] uppercase">
           Vizualizace postupu uživatelů skrze úrovně kategorií
         </p>

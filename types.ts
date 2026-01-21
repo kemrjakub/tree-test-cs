@@ -5,12 +5,15 @@ export interface CategoryNode {
 }
 
 export interface TestResult {
-  userId: string;
+  session_id?: string;    // pro Supabase
+  user_id?: string;       // pro Supabase
+  userId?: string;        // pro starší kód
   questionIndex: number;
-  path: string[]; // Final chosen path
-  fullHistory: string[]; // Every node name visited (including backtracking)
-  targetFound: string;
-  timestamp: number;
+  target_found?: string;  // pro Supabase
+  targetFound?: string;   // pro starší kód
+  full_history?: string[]; // pro Supabase
+  fullHistory?: string[];  // pro starší kód
+  timestamp?: number;
 }
 
 export interface Session {

@@ -58,7 +58,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <div className="lg:col-span-3 space-y-6">
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Relace</h3>
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Historie relací</h3>
           <div className="space-y-2">
             {sessions.map(s => (
               <div key={s.id} className="group relative flex items-center">

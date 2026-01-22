@@ -63,24 +63,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             {sessions.map(s => (
               <div key={s.id} className="group relative flex items-center">
 
-<button
-  onClick={() => setSelectedSessionId(s.id)}
-  className={`w-full text-left px-4 py-3 rounded-2xl text-[11px] font-black transition-all pr-10 border-2 ${
-    selectedSessionId === s.id 
-      ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm' // Nový design pro vybranou relaci
-      : 'border-transparent bg-gray-50 text-gray-500 hover:bg-gray-100' // Standardní stav
-  }`}
->
-  {s.name}
-</button>
+                <button
+                  onClick={() => setSelectedSessionId(s.id)}
+                  className={`w-full text-left px-4 py-3 rounded-2xl text-[11px] font-black transition-all pr-10 border-2 ${
+                    selectedSessionId === s.id 
+                      ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm' // Nový design pro vybranou relaci
+                      : 'border-transparent bg-gray-50 text-gray-500 hover:bg-gray-100' // Standardní stav
+                  }`}
+                >
+                  {s.name}
+                </button>
                 
+                {/* Tlačítko pro smazání */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onDeleteSession(s.id);
                   }}
                   className={`absolute right-2 p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100 ${
-                    selectedSessionId === s.id ? 'text-white/70 hover:text-white' : 'text-gray-300 hover:text-red-500'
+                    selectedSessionId === s.id 
+                      ? 'text-blue-600 hover:text-red-500' // Pokud je vybrané, ikonka je modrá (a při hoveru zčervená)
+                      : 'text-gray-300 hover:text-red-500' // Pokud není vybrané, zůstává šedá
                   }`}
                   title="Smazat relaci"
                 >

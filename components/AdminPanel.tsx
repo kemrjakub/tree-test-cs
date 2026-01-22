@@ -62,14 +62,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="space-y-2">
             {sessions.map(s => (
               <div key={s.id} className="group relative flex items-center">
-                <button
-                  onClick={() => setSelectedSessionId(s.id)}
-                  className={`w-full text-left px-4 py-3 rounded-2xl text-[11px] font-black transition-all pr-10 ${
-                    selectedSessionId === s.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                  }`}
-                >
-                  {s.name}
-                </button>
+
+<button
+  onClick={() => setSelectedSessionId(s.id)}
+  className={`w-full text-left px-4 py-3 rounded-2xl text-[11px] font-black transition-all pr-10 border-2 ${
+    selectedSessionId === s.id 
+      ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm' // Nový design pro vybranou relaci
+      : 'border-transparent bg-gray-50 text-gray-500 hover:bg-gray-100' // Standardní stav
+  }`}
+>
+  {s.name}
+</button>
                 
                 <button
                   onClick={(e) => {

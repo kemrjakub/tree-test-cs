@@ -37,7 +37,7 @@ export const categoryData: CategoryNode = {
           children: [
             { name: "Přísady do mléka", children: [{ name: "Kukuřičné lupínky" }, { name: "Čokoládové donuty" }, { name: "Müsli" }] },
             { name: "Celozrnné vločky", children: [{ name: "Ovesné vločky" }, { name: "Špaldové vločky" }, { name: "Žitné vločky" }] },
-            { name: "Ostatní", children: [{ name: "Tapioka" }, { name: "Chia semínka" }] }
+            { name: "Ostatní přísady", children: [{ name: "Tapioka" }, { name: "Chia semínka" }] }
           ]
         },
         {
@@ -79,7 +79,7 @@ export const categoryData: CategoryNode = {
             {
               name: "Ovoce",
               children: [
-                { name: "Čerstvé", children: [{ name: "České", children: [{ name: "Jablka" }, { name: "Švestky" }, { name: "Třešně" }, { name: "Hrušky" }, { name: "Meruňky" }] }, { name: "Tropické", children: [{ name: "Pomeranče" }, { name: "Mandarinky" }, { name: "Kiwi" }, { name: "Mango" }, { name: "Papája" }, { name: "Ostatní" }] }] },
+                { name: "Čerstvé", children: [{ name: "České", children: [{ name: "Jablka" }, { name: "Švestky" }, { name: "Třešně" }, { name: "Hrušky" }, { name: "Meruňky" }] }, { name: "Tropické", children: [{ name: "Pomeranče" }, { name: "Mandarinky" }, { name: "Kiwi" }, { name: "Mango" }, { name: "Papája" }, { name: "Jiné druhy ovoce" }] }] },
                 { name: "Sušené", children: [{ name: "Mango sušené" }, { name: "Datle sušené" }, { name: "Křížaly" }] }
               ]
             },
@@ -91,7 +91,7 @@ export const categoryData: CategoryNode = {
                 { name: "Listová zelenina", children: [{ name: "Hlávkový salát" }, { name: "Špenát" }, { name: "Mangold" }, { name: "Rukola" }, { name: "Polníček" }] },
                 { name: "Cibulová zelenina", children: [{ name: "Cibule", children: [{ name: "Červená cibule" }, { name: "Bílá cibule" }, { name: "Šalotka" }] }, { name: "Česnek" }, { name: "Pór" }, { name: "Pažitka" }] },
                 { name: "Plodová zelenina", children: [{ name: "Rajčata" }, { name: "Okurky" }, { name: "Papriky" }, { name: "Cukety" }, { name: "Melouny", children: [{ name: "Vodní meloun" }, { name: "Žlutý meloun" }] }] },
-                { name: "Lusková zelenina", children: [{ name: "Fazole", children: [{ name: "Bílé" }, { name: "Červené" }, { name: "Mungo" }, { name: "Zelené" }] }, { name: "Hrách" }, { name: "Čočka" }, { name: "Sójové boby" }] }, { name: "Ostatní" }
+                { name: "Lusková zelenina", children: [{ name: "Fazole", children: [{ name: "Bílé" }, { name: "Červené" }, { name: "Mungo" }, { name: "Zelené" }] }, { name: "Hrách" }, { name: "Čočka" }, { name: "Sójové boby" }] }, { name: "Ostatní zelenina" }
               ]
             }
           ]
@@ -121,7 +121,7 @@ export const categoryData: CategoryNode = {
               children: [
                 { name: "Destiláty" }, { name: "Likéry" }, { name: "Rum" }, { name: "Vodka" },
                 { name: "Whiskey", children: [{ name: "Irská whiskey" }, { name: "Skotská whiskey" }, { name: "Bourbon" }] },
-                { name: "Gin" }, { name: "Brandy" }, { name: "Ostatní" }
+                { name: "Gin" }, { name: "Brandy" }, { name: "Ostatní lihoviny" }
               ]
             }
           ]

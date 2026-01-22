@@ -127,21 +127,21 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="p-12 pb-16 text-center flex flex-col items-center gap-4">
-        <div className="flex items-center gap-3 opacity-50 hover:opacity-100 transition-opacity duration-300">
-          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
-            Powered by <br />
+      <footer className="p-12 pb-16 text-center flex flex-col items-center gap-12">
+        <div className="flex flex-col items-center gap-3">
+          <span className="text-[11px] text-gray-500 font-black uppercase tracking-[0.3em] opacity-50">
+            Powered by
           </span>
           <img 
             src={logo} 
             alt="Logo" 
-            className="h-5 w-auto"
+            className="h-10 w-auto grayscale transition-all duration-500 hover:grayscale-0 opacity-50 hover:opacity-100"
           />
         </div>
         
-        <div className="text-[9px] text-gray-300 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2">
-          <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-          Cloud Database Connected • {userId}
+        <div className="text-[10px] text-gray-200 font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+          <span className="w-2 h-2 bg-green-300 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+          {userId}
         </div>
       </footer>
       

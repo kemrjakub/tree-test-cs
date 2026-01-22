@@ -91,7 +91,7 @@ export const categoryData: CategoryNode = {
                 { name: "Listová zelenina", children: [{ name: "Hlávkový salát" }, { name: "Špenát" }, { name: "Mangold" }, { name: "Rukola" }, { name: "Polníček" }] },
                 { name: "Cibulová zelenina", children: [{ name: "Cibule", children: [{ name: "Červená cibule" }, { name: "Bílá cibule" }, { name: "Šalotka" }] }, { name: "Česnek" }, { name: "Pór" }, { name: "Pažitka" }] },
                 { name: "Plodová zelenina", children: [{ name: "Rajčata" }, { name: "Okurky" }, { name: "Papriky" }, { name: "Cukety" }, { name: "Melouny", children: [{ name: "Vodní meloun" }, { name: "Žlutý meloun" }] }] },
-                { name: "Lusková zelenina", children: [{ name: "Fazole", children: [{ name: "Bílé" }, { name: "Červené" }, { name: "Mungo" }, { name: "Zelené" }] }, { name: "Hrách" }, { name: "Čočka" }, { name: "Sójové boby" }] }
+                { name: "Lusková zelenina", children: [{ name: "Fazole", children: [{ name: "Bílé" }, { name: "Červené" }, { name: "Mungo" }, { name: "Zelené" }] }, { name: "Hrách" }, { name: "Čočka" }, { name: "Sójové boby" }] }, { name: "Ostatní" }
               ]
             }
           ]

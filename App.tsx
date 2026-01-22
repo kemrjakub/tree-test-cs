@@ -4,8 +4,8 @@ import Navigation from './components/Navigation';
 import AdminPanel from './components/AdminPanel';
 import StudentMode from './components/StudentMode';
 import AdminLogin from './components/AdminLogin';
-// IMPORT SUPABASE KLIENTA
 import { supabase } from './supabase'; 
+import logo from './logo.png';
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>(AppMode.STUDENT);
@@ -126,8 +126,23 @@ const App: React.FC = () => {
           <StudentMode userId={userId} activeSession={activeSession} onSubmitResult={submitResult} />
         )}
       </main>
-      <footer className="p-8 text-center text-[10px] text-gray-300 font-bold uppercase tracking-widest">
-         Powered by Interaction Design Team • {userId}
+
+      <footer className="p-12 pb-16 text-center flex flex-col items-center gap-4">
+        <div className="flex items-center gap-3 opacity-50 hover:opacity-100 transition-opacity duration-300">
+          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
+            Powered by
+          </span>
+          <img 
+            src={logo} 
+            alt="Logo" 
+            className="h-6 w-auto grayscale contrast-125" // grayscale zajistí, že logo bude decentní
+          />
+        </div>
+        
+        <div className="text-[9px] text-gray-300 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+          <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+          Cloud Database Connected • {userId}
+        </div>
       </footer>
       
     </div>

@@ -130,12 +130,12 @@ const App: React.FC = () => {
       <footer className="p-12 pb-16 text-center flex flex-col items-center gap-4">
         <div className="flex items-center gap-3 opacity-50 hover:opacity-100 transition-opacity duration-300">
           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
-            Powered by
+            Powered by <br />
           </span>
           <img 
             src={logo} 
             alt="Logo" 
-            className="h-6 w-auto grayscale contrast-125" // grayscale zajistí, že logo bude decentní
+            className="h-5 w-auto"
           />
         </div>
         

@@ -24,7 +24,6 @@ export const categoryData: CategoryNode = {
             { name: "Kulatozrnná", children: [{ name: "Arborio" }, { name: "Carnaroli" }, { name: "Sushi rýže" }] }
           ]
         },
-        { name: "Semínka", children: [{ name: "Slunečnicové semínko" }, { name: "Lněné semínko" }, { name: "Černý sezam" }, { name: "Bílý sezam" }] },
         {
           name: "Ořechy",
           children: [
@@ -45,8 +44,6 @@ export const categoryData: CategoryNode = {
           name: "Koření",
           children: [
             { name: "Sůl", children: [{ name: "Himalájská sůl" }, { name: "Mořská sůl" }, { name: "Kamenná sůl" }] },
-            { name: "Sušená zelenina", children: [{ name: "Sušená cibule" }, { name: "Sušený česnek" }, { name: "Sušený zázvor" }] },
-            { name: "Květy a poupata", children: [{ name: "Hřebíček" }, { name: "Kapary" }, { name: "Šafrán" }, { name: "Muškátový květ" }] },
             {
               name: "Ostré koření",
               children: [
@@ -69,7 +66,11 @@ export const categoryData: CategoryNode = {
                 { name: "Badyán" }, { name: "Vanilka" }, { name: "Nové koření" }
               ]
             },
-            { name: "Bylinky", children: [{ name: "Majoránka" }, { name: "Bobkový list" }, { name: "Tymián" }, { name: "Oregáno" }, { name: "Bazalka" }, { name: "Estragon" }, { name: "Petržel" }, { name: "Citronová tráva" }] }
+            { name: "Bylinky", children: [{ name: "Majoránka" }, { name: "Bobkový list" }, { name: "Tymián" }, { name: "Oregáno" }, { name: "Bazalka" }, { name: "Estragon" }, { name: "Petržel" }, { name: "Citronová tráva" }] },
+            { name: "Sušená zelenina", children: [{ name: "Sušená cibule" }, { name: "Sušený česnek" }, { name: "Sušený zázvor" }] },
+            { name: "Květy a poupata", children: [{ name: "Hřebíček" }, { name: "Kapary" }, { name: "Šafrán" }, { name: "Muškátový květ" }] },
+            { name: "Semínka", children: [{ name: "Slunečnicové semínko" }, { name: "Lněné semínko" }, { name: "Černý sezam" }, { name: "Bílý sezam" }] }
+
           ]
         },
         {
@@ -78,7 +79,7 @@ export const categoryData: CategoryNode = {
             {
               name: "Ovoce",
               children: [
-                { name: "Čerstvé", children: [{ name: "České", children: [{ name: "Jablka" }, { name: "Švestky" }, { name: "Třešně" }, { name: "Hrušky" }, { name: "Meruňky" }] }, { name: "Tropické", children: [{ name: "Pomeranče" }, { name: "Mandarinky" }, { name: "Kiwi" }, { name: "Mango" }, { name: "Papája" }] }] },
+                { name: "Čerstvé", children: [{ name: "České", children: [{ name: "Jablka" }, { name: "Švestky" }, { name: "Třešně" }, { name: "Hrušky" }, { name: "Meruňky" }] }, { name: "Tropické", children: [{ name: "Pomeranče" }, { name: "Mandarinky" }, { name: "Kiwi" }, { name: "Mango" }, { name: "Papája" }, { name: "Ostatní" }] }] },
                 { name: "Sušené", children: [{ name: "Mango sušené" }, { name: "Datle sušené" }, { name: "Křížaly" }] }
               ]
             },
@@ -120,7 +121,7 @@ export const categoryData: CategoryNode = {
               children: [
                 { name: "Destiláty" }, { name: "Likéry" }, { name: "Rum" }, { name: "Vodka" },
                 { name: "Whiskey", children: [{ name: "Irská whiskey" }, { name: "Skotská whiskey" }, { name: "Bourbon" }] },
-                { name: "Gin" }, { name: "Brandy" }
+                { name: "Gin" }, { name: "Brandy" }, { name: "Ostatní" }
               ]
             }
           ]

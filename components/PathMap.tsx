@@ -94,7 +94,7 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
     return Math.min(300, Math.max(40, text.length * avgChar + 12));
   };
 
-  // compute labels + simple collision resolution (iterative)
+  // compute labels: only for nodes with data; place radially and distribute tangentially within depth-group/angle clusters
   const labels = useMemo(() => {
     type Label = {
       name: string;
@@ -102,113 +102,97 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
       y: number;
       w: number;
       h: number;
-      cx: number; // node center x
-      cy: number; // node center y
+      cx: number;
+      cy: number;
       radius: number;
+      angle: number;
+      depth: number;
+      centerX: number;
+      centerY: number;
     };
 
-    const out: Label[] = data.points.map(p => {
+    const raw: Label[] = data.points.map(p => {
       const s = data.stats[p.name] || { total: 0, correct: 0, wrong: 0, nominated: 0 };
+      if (!s.total) return null; // skip irrelevant nodes
       const radius = Math.min(35, 12 + s.total * 2);
+      const angle = Math.atan2(p.y - centerY, p.x - centerX); // radians
+      // initial label center placed radially outward
+      const distFromNode = radius + 18;
+      const centerXpos = p.x + Math.cos(angle) * distFromNode;
+      const centerYpos = p.y + Math.sin(angle) * distFromNode;
       const labelW = estimateTextWidth(p.name, 12);
       const labelH = 18;
-      const lx = p.x - labelW / 2;
-      const ly = p.y + radius + 10; // below node
       return {
         name: p.name,
-        x: lx,
-        y: ly,
+        x: centerXpos - labelW / 2,
+        y: centerYpos - labelH / 2,
         w: labelW,
         h: labelH,
         cx: p.x,
         cy: p.y,
-        radius
-      };
+        radius,
+        angle,
+        depth: p.depth,
+        centerX: centerXpos,
+        centerY: centerYpos
+      } as Label;
+    }).filter(Boolean) as Label[];
+
+    // group by depth then by rounded angle bucket to separate close-by labels tangentially
+    const buckets: Record<string, Label[]> = {};
+    const angleBucketSize = 0.12; // ~7 degrees
+    raw.forEach(l => {
+      const key = `${l.depth}-${Math.round(l.angle / angleBucketSize)}`;
+      buckets[key] = buckets[key] || [];
+      buckets[key].push(l);
     });
 
-    // iterative repulsion to reduce overlaps
-    const steps = 8;
-    for (let step = 0; step < steps; step++) {
-      for (let i = 0; i < out.length; i++) {
-        for (let j = i + 1; j < out.length; j++) {
-          const a = out[i];
-          const b = out[j];
-          // check bbox overlap
-          if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) {
-            // compute push vector from center-to-center of labels
-            const ax = a.x + a.w / 2;
-            const ay = a.y + a.h / 2;
-            const bx = b.x + b.w / 2;
-            const by = b.y + b.h / 2;
-            let dx = ax - bx;
-            let dy = ay - by;
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            dx /= dist;
-            dy /= dist;
-            const overlapX = Math.max(0, (a.w + b.w) / 2 - Math.abs(ax - bx));
-            const overlapY = Math.max(0, (a.h + b.h) / 2 - Math.abs(ay - by));
-            const push = Math.max(overlapX, overlapY) * 0.55;
-            // move both labels slightly apart, but keep them roughly anchored radially
-            a.x += dx * push * 0.6;
-            a.y += dy * push * 0.6;
-            b.x -= dx * push * 0.6;
-            b.y -= dy * push * 0.6;
-          }
-        }
-      }
-
-      // also avoid labels overlapping their own node circle (push label outward along radial from node)
-      out.forEach(l => {
-        const labelTop = l.y;
-        const dx = (l.x + l.w / 2) - l.cx;
-        const dy = (l.y + l.h / 2) - l.cy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const minDist = l.radius + 8 + Math.max(l.h / 2, 0);
-        if (dist < minDist) {
-          const nx = dx / (dist || 1);
-          const ny = dy / (dist || 1);
-          const needed = minDist - dist;
-          l.x += nx * needed;
-          l.y += ny * needed;
-        }
-        // clamp label distance so they don't go far away
-        const relDx = l.x + l.w / 2 - l.cx;
-        const relDy = l.y + l.h / 2 - l.cy;
-        const maxDist = 220;
-        const curDist = Math.sqrt(relDx * relDx + relDy * relDy);
+    Object.values(buckets).forEach(group => {
+      group.sort((a, b) => a.angle - b.angle);
+      const n = group.length;
+      if (n <= 1) return;
+      // tangent vector for offset: tx, ty
+      group.forEach((l, idx) => {
+        const tx = -Math.sin(l.angle);
+        const ty = Math.cos(l.angle);
+        const step = l.h + 6; // spacing between stacked labels
+        const offsetIndex = idx - (n - 1) / 2;
+        const tangentialOffset = offsetIndex * step;
+        l.x = l.centerX - l.w / 2 + tx * tangentialOffset;
+        l.y = l.centerY - l.h / 2 + ty * tangentialOffset;
+        // clamp distance to node
+        const relX = (l.x + l.w / 2) - l.cx;
+        const relY = (l.y + l.h / 2) - l.cy;
+        const curDist = Math.sqrt(relX * relX + relY * relY);
+        const maxDist = 140;
         if (curDist > maxDist) {
-          const nx = relDx / curDist;
-          const ny = relDy / curDist;
+          const nx = relX / curDist;
+          const ny = relY / curDist;
           const cx = l.cx + nx * maxDist - l.w / 2;
           const cy = l.cy + ny * maxDist - l.h / 2;
           l.x = cx;
           l.y = cy;
         }
       });
-    }
+    });
 
-    return out;
+    return raw;
   }, [data]);
 
-  // Helpers for curved parallel paths (unchanged)
+  // Helpers for curved parallel paths
   const makeCurvePath = (x1: number, y1: number, x2: number, y2: number, index: number, total: number) => {
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
     const dx = x2 - x1;
     const dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    // normalized perpendicular
     const nx = -dy / len;
     const ny = dx / len;
-
-    // spacing: wider when more parallel paths, but clamp
-    const baseSpacing = 8; // px per step
+    const baseSpacing = 8;
     const spreadFactor = Math.min(1.5, 1 + total / 10);
     const offset = (index - (total - 1) / 2) * baseSpacing * spreadFactor;
-
     const controlX = midX + nx * offset;
     const controlY = midY + ny * offset;
-
     return `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
   };
 

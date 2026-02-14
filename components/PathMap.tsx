@@ -23,6 +23,7 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
   const data = useMemo(() => {
     const stats: Record<string, { total: number; correct: number; wrong: number; nominated: number }> = {};
     const connections: Record<string, number> = {};
+    const sequences: Record<string, number> = {};
 
     const init = (node: CategoryNode) => {
       stats[node.name] = { total: 0, correct: 0, wrong: 0, nominated: 0 };
@@ -30,7 +31,7 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
     };
     init(categoryData);
 
-    // build stats + count each directed edge occurrence
+    // build stats + count each directed edge occurrence + full sequences
     results.forEach(res => {
       const history = res.fullHistory || res.full_history || [];
       const target = QUESTIONS[res.questionIndex]?.target;
@@ -46,6 +47,11 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
           connections[pair] = (connections[pair] || 0) + 1;
         }
       });
+
+      if (history.length > 1) {
+        const key = history.join('->');
+        sequences[key] = (sequences[key] || 0) + 1;
+      }
     });
 
     const points: Point[] = [];
@@ -68,7 +74,18 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
     };
 
     layout(categoryData, 0, 2 * Math.PI, 0);
-    return { points, stats, connections };
+
+    // find most common full sequence
+    let mostCommonSequence: string | null = null;
+    let maxSeq = 0;
+    Object.entries(sequences).forEach(([k, v]) => {
+      if (v > maxSeq) {
+        maxSeq = v;
+        mostCommonSequence = k;
+      }
+    });
+
+    return { points, stats, connections, sequences, mostCommonSequence };
   }, [results]);
 
   // Helpers for curved parallel paths
@@ -180,6 +197,39 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
               );
             });
           })}
+
+          {/* Highlight the most common full sequence (draw on top) */}
+          {data.mostCommonSequence ? (() => {
+            const seq = data.mostCommonSequence!;
+            const seqParts = seq.split('->');
+            const seqCount = (data as any).sequences?.[seq] || 1;
+            // draw each consecutive pair in the sequence as a strong highlighted path
+            return seqParts.slice(1).map((to, idx) => {
+              const from = seqParts[idx];
+              const p1 = pointByName[from];
+              const p2 = pointByName[to];
+              if (!p1 || !p2) return null;
+              // use pair connection count to decide offset if many parallels exist
+              const pairKey = `${from}->${to}`;
+              const pairCount = data.connections[pairKey] || 1;
+              // draw few parallel strokes to match multiplicity but with prominent color
+              return [...Array(Math.min(pairCount, 3))].map((_, i) => {
+                const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y, i, Math.max(1, pairCount));
+                const sw = 3 + Math.log(seqCount + 1);
+                return (
+                  <path
+                    key={`seq-highlight-${pairKey}-${i}`}
+                    d={pathD}
+                    fill="none"
+                    stroke="#0284c7"
+                    strokeWidth={sw}
+                    strokeOpacity={0.95}
+                    strokeLinecap="round"
+                  />
+                );
+              });
+            });
+          })() : null}
 
           {data.points.map(p => {
             const s = data.stats[p.name];

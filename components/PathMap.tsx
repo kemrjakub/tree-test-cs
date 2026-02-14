@@ -30,6 +30,7 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
     };
     init(categoryData);
 
+    // build stats + count each directed edge occurrence
     results.forEach(res => {
       const history = res.fullHistory || res.full_history || [];
       const target = QUESTIONS[res.questionIndex]?.target;
@@ -70,6 +71,28 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
     return { points, stats, connections };
   }, [results]);
 
+  // Helpers for curved parallel paths
+  const makeCurvePath = (x1: number, y1: number, x2: number, y2: number, index: number, total: number) => {
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    // normalized perpendicular
+    const nx = -dy / len;
+    const ny = dx / len;
+
+    // spacing: wider when more parallel paths, but clamp
+    const baseSpacing = 8; // px per step
+    const spreadFactor = Math.min(1.5, 1 + total / 10); 
+    const offset = (index - (total - 1) / 2) * baseSpacing * spreadFactor;
+
+    const controlX = midX + nx * offset;
+    const controlY = midY + ny * offset;
+
+    return `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
+  };
+
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
@@ -92,6 +115,10 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
     setScale(0.8);
     setOffset({ x: 0, y: 0 });
   };
+
+  // map points by name for fast lookup
+  const pointByName: Record<string, Point> = {};
+  data.points.forEach(p => (pointByName[p.name] = p));
 
   return (
     <div 
@@ -127,19 +154,32 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
           viewBox={`0 0 ${virtualWidth} ${virtualHeight}`}
           style={{ overflow: 'visible' }}
         >
-          {data.points.map(p => p.children.map(child => {
-            const weight = data.connections[`${p.name}->${child.name}`] || 0;
-            if (weight === 0) return null;
-            return (
-              <line
-                key={`${p.name}-${child.name}`}
-                x1={p.x} y1={p.y} x2={child.x} y2={child.y}
-                stroke="#86EFAC"
-                strokeWidth={Math.max(1.5, weight * 3)}
-                strokeOpacity="0.3"
-              />
-            );
-          }))}
+          {/* Render parallel curved paths for each occurrence */}
+          {Object.entries(data.connections).map(([pair, count]) => {
+            const [from, to] = pair.split('->');
+            const p1 = pointByName[from];
+            const p2 = pointByName[to];
+            if (!p1 || !p2 || count <= 0) return null;
+
+            // draw 'count' parallel curved paths, thinner for each so they are all visible
+            return [...Array(count)].map((_, i) => {
+              const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y, i, count);
+              // strokeWidth scaled down so many paths don't become huge
+              const sw = Math.max(1, Math.min(2.5, 2.5 / Math.sqrt(count)));
+              const opacity = 0.22 + Math.min(0.6, count * 0.03);
+              return (
+                <path
+                  key={`${pair}-${i}`}
+                  d={pathD}
+                  fill="none"
+                  stroke="#86EFAC"
+                  strokeWidth={sw}
+                  strokeOpacity={opacity}
+                  strokeLinecap="round"
+                />
+              );
+            });
+          })}
 
           {data.points.map(p => {
             const s = data.stats[p.name];

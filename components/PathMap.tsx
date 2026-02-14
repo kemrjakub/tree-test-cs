@@ -10,7 +10,7 @@ interface PathMapProps {
 interface Point { x: number; y: number; name: string; children: Point[]; depth: number }
 
 const PathMap: React.FC<PathMapProps> = ({ results }) => {
-  const virtualWidth = 2500; 
+  const virtualWidth = 2500;
   const virtualHeight = 2500;
   const centerX = virtualWidth / 2;
   const centerY = virtualHeight / 2;
@@ -57,10 +57,10 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
     const points: Point[] = [];
     const layout = (node: CategoryNode, angleStart: number, angleEnd: number, depth: number): Point => {
       const angle = (angleStart + angleEnd) / 2;
-      const radius = depth * 180; 
+      const radius = depth * 180;
       const x = centerX + radius * Math.cos(angle);
       const y = centerY + radius * Math.sin(angle);
-      
+
       const p: Point = { x, y, name: node.name, children: [], depth };
       points.push(p);
 
@@ -88,7 +88,109 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
     return { points, stats, connections, sequences, mostCommonSequence };
   }, [results]);
 
-  // Helpers for curved parallel paths
+  // small helper to estimate text width
+  const estimateTextWidth = (text: string, fontSize = 12) => {
+    const avgChar = fontSize * 0.55;
+    return Math.min(300, Math.max(40, text.length * avgChar + 12));
+  };
+
+  // compute labels + simple collision resolution (iterative)
+  const labels = useMemo(() => {
+    type Label = {
+      name: string;
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      cx: number; // node center x
+      cy: number; // node center y
+      radius: number;
+    };
+
+    const out: Label[] = data.points.map(p => {
+      const s = data.stats[p.name] || { total: 0, correct: 0, wrong: 0, nominated: 0 };
+      const radius = Math.min(35, 12 + s.total * 2);
+      const labelW = estimateTextWidth(p.name, 12);
+      const labelH = 18;
+      const lx = p.x - labelW / 2;
+      const ly = p.y + radius + 10; // below node
+      return {
+        name: p.name,
+        x: lx,
+        y: ly,
+        w: labelW,
+        h: labelH,
+        cx: p.x,
+        cy: p.y,
+        radius
+      };
+    });
+
+    // iterative repulsion to reduce overlaps
+    const steps = 8;
+    for (let step = 0; step < steps; step++) {
+      for (let i = 0; i < out.length; i++) {
+        for (let j = i + 1; j < out.length; j++) {
+          const a = out[i];
+          const b = out[j];
+          // check bbox overlap
+          if (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y) {
+            // compute push vector from center-to-center of labels
+            const ax = a.x + a.w / 2;
+            const ay = a.y + a.h / 2;
+            const bx = b.x + b.w / 2;
+            const by = b.y + b.h / 2;
+            let dx = ax - bx;
+            let dy = ay - by;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            dx /= dist;
+            dy /= dist;
+            const overlapX = Math.max(0, (a.w + b.w) / 2 - Math.abs(ax - bx));
+            const overlapY = Math.max(0, (a.h + b.h) / 2 - Math.abs(ay - by));
+            const push = Math.max(overlapX, overlapY) * 0.55;
+            // move both labels slightly apart, but keep them roughly anchored radially
+            a.x += dx * push * 0.6;
+            a.y += dy * push * 0.6;
+            b.x -= dx * push * 0.6;
+            b.y -= dy * push * 0.6;
+          }
+        }
+      }
+
+      // also avoid labels overlapping their own node circle (push label outward along radial from node)
+      out.forEach(l => {
+        const labelTop = l.y;
+        const dx = (l.x + l.w / 2) - l.cx;
+        const dy = (l.y + l.h / 2) - l.cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const minDist = l.radius + 8 + Math.max(l.h / 2, 0);
+        if (dist < minDist) {
+          const nx = dx / (dist || 1);
+          const ny = dy / (dist || 1);
+          const needed = minDist - dist;
+          l.x += nx * needed;
+          l.y += ny * needed;
+        }
+        // clamp label distance so they don't go far away
+        const relDx = l.x + l.w / 2 - l.cx;
+        const relDy = l.y + l.h / 2 - l.cy;
+        const maxDist = 220;
+        const curDist = Math.sqrt(relDx * relDx + relDy * relDy);
+        if (curDist > maxDist) {
+          const nx = relDx / curDist;
+          const ny = relDy / curDist;
+          const cx = l.cx + nx * maxDist - l.w / 2;
+          const cy = l.cy + ny * maxDist - l.h / 2;
+          l.x = cx;
+          l.y = cy;
+        }
+      });
+    }
+
+    return out;
+  }, [data]);
+
+  // Helpers for curved parallel paths (unchanged)
   const makeCurvePath = (x1: number, y1: number, x2: number, y2: number, index: number, total: number) => {
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
@@ -101,7 +203,7 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
 
     // spacing: wider when more parallel paths, but clamp
     const baseSpacing = 8; // px per step
-    const spreadFactor = Math.min(1.5, 1 + total / 10); 
+    const spreadFactor = Math.min(1.5, 1 + total / 10);
     const offset = (index - (total - 1) / 2) * baseSpacing * spreadFactor;
 
     const controlX = midX + nx * offset;
@@ -112,16 +214,16 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
 
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        setScale(prev => Math.min(Math.max(0.2, prev * delta), 4));
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      setScale(prev => Math.min(Math.max(0.2, prev * delta), 4));
     }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) setIsDragging(true);
   };
-  
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
       setOffset(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
@@ -138,7 +240,7 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
   data.points.forEach(p => (pointByName[p.name] = p));
 
   return (
-    <div 
+    <div
       className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden relative h-[800px] cursor-grab active:cursor-grabbing select-none"
       ref={containerRef}
       onWheel={handleWheel}
@@ -157,31 +259,29 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
           Vycentrovat
         </button>
       </div>
-      
-      <div 
+
+      <div
         className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out"
         style={{
           transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
           transformOrigin: 'center center'
         }}
       >
-        <svg 
-          width={virtualWidth} 
-          height={virtualHeight} 
+        <svg
+          width={virtualWidth}
+          height={virtualHeight}
           viewBox={`0 0 ${virtualWidth} ${virtualHeight}`}
           style={{ overflow: 'visible' }}
         >
-          {/* Render parallel curved paths for each occurrence */}
+          {/* connections */}
           {Object.entries(data.connections).map(([pair, count]) => {
             const [from, to] = pair.split('->');
             const p1 = pointByName[from];
             const p2 = pointByName[to];
             if (!p1 || !p2 || count <= 0) return null;
 
-            // draw 'count' parallel curved paths, thinner for each so they are all visible
             return [...Array(count)].map((_, i) => {
               const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y, i, count);
-              // strokeWidth scaled down so many paths don't become huge
               const sw = Math.max(1, Math.min(2.5, 2.5 / Math.sqrt(count)));
               const opacity = 0.22 + Math.min(0.6, count * 0.03);
               return (
@@ -198,21 +298,18 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
             });
           })}
 
-          {/* Highlight the most common full sequence (draw on top) */}
+          {/* Highlight most common full sequence (if any) */}
           {data.mostCommonSequence ? (() => {
             const seq = data.mostCommonSequence!;
             const seqParts = seq.split('->');
             const seqCount = (data as any).sequences?.[seq] || 1;
-            // draw each consecutive pair in the sequence as a strong highlighted path
             return seqParts.slice(1).map((to, idx) => {
               const from = seqParts[idx];
               const p1 = pointByName[from];
               const p2 = pointByName[to];
               if (!p1 || !p2) return null;
-              // use pair connection count to decide offset if many parallels exist
               const pairKey = `${from}->${to}`;
               const pairCount = data.connections[pairKey] || 1;
-              // draw few parallel strokes to match multiplicity but with prominent color
               return [...Array(Math.min(pairCount, 3))].map((_, i) => {
                 const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y, i, Math.max(1, pairCount));
                 const sw = 3 + Math.log(seqCount + 1);
@@ -231,29 +328,62 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
             });
           })() : null}
 
+          {/* nodes */}
           {data.points.map(p => {
             const s = data.stats[p.name];
             if (!s || s.total === 0) return null;
             const radius = Math.min(35, 12 + s.total * 2);
             const correctAngle = (s.correct / s.total) * 360;
-
             return (
               <g key={p.name} className="cursor-help">
                 <circle cx={p.x} cy={p.y} r={radius} fill="#FCA5A5" />
                 <path d={describeArc(p.x, p.y, radius, 0, correctAngle)} fill="#4ADE80" />
                 <circle cx={p.x} cy={p.y} r={radius} fill="none" stroke="white" strokeWidth="2.5" />
-                
-                <text 
-                    x={p.x} 
-                    y={p.y + radius + 18} 
-                    textAnchor="middle" 
-                    className="text-[12px] font-black fill-gray-800 uppercase tracking-tighter shadow-sm"
-                    style={{ paintOrder: 'stroke', stroke: 'white', strokeWidth: '3px', strokeLinecap: 'round' }}
-                >
-                  {p.name}
-                </text>
-                
                 <title>{`${p.name}\n---\nPrůchodů celkem: ${s.total}\nSprávná cesta: ${s.correct}\nChybná cesta: ${s.total - s.correct}\nZvoleno jako cíl: ${s.nominated}x`}</title>
+              </g>
+            );
+          })}
+
+          {/* labels with leader lines */}
+          {labels.map((l) => {
+            const textX = l.x + l.w / 2;
+            const textY = l.y + l.h / 2 + 4;
+            // leader line from node edge to label rect center
+            const nx = textX - l.cx;
+            const ny = textY - l.cy;
+            const dist = Math.sqrt(nx * nx + ny * ny) || 1;
+            const startX = l.cx + (l.radius * nx) / dist;
+            const startY = l.cy + (l.radius * ny) / dist;
+            const endX = textX;
+            const endY = textY - 6; // small offset to rect top center
+            return (
+              <g key={`label-${l.name}`}>
+                <line
+                  x1={startX}
+                  y1={startY}
+                  x2={endX}
+                  y2={endY}
+                  stroke="rgba(120,120,120,0.35)"
+                  strokeWidth={1}
+                />
+                <rect
+                  x={l.x}
+                  y={l.y}
+                  width={l.w}
+                  height={l.h}
+                  rx={8}
+                  fill="rgba(255,255,255,0.96)"
+                  stroke="rgba(0,0,0,0.06)"
+                />
+                <text
+                  x={textX}
+                  y={textY}
+                  textAnchor="middle"
+                  className="text-[11px] font-black fill-gray-800 uppercase tracking-tighter"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {l.name}
+                </text>
               </g>
             );
           })}
@@ -263,11 +393,11 @@ const PathMap: React.FC<PathMapProps> = ({ results }) => {
   );
 };
 
-function describeArc(x: number, y: number, radius: number, startAngle: number, endAngle: number){
-    const start = polarToCartesian(x, y, radius, endAngle);
-    const end = polarToCartesian(x, y, radius, startAngle);
-    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-    return ["M", x, y, "L", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y, "L", x, y, "Z"].join(" ");
+function describeArc(x: number, y: number, radius: number, startAngle: number, endAngle: number) {
+  const start = polarToCartesian(x, y, radius, endAngle);
+  const end = polarToCartesian(x, y, radius, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return ["M", x, y, "L", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y, "L", x, y, "Z"].join(" ");
 }
 
 function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {

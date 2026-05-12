@@ -192,6 +192,7 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
   // path helper for parallel curved paths (unchanged)
   const makeCurvePath = (x1: number, y1: number, x2: number, y2: number, index: number, total: number) => {
   // Simplified to draw a single curve with fixed offset
+  // Simplified to draw a single curve with fixed offset for curve strength
   const makeCurvePath = (x1: number, y1: number, x2: number, y2: number) => {
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
@@ -276,26 +277,11 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
             const p1 = pointByName[from];
             const p2 = pointByName[to];
             // draw only if both points exist in the pruned layout
-            if (!p1 || !p2 || count <= 0) return null;
-            return [...Array(count)].map((_, i) => {
-              const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y, i, count);
-              const sw = Math.max(1, Math.min(2.5, 2.5 / Math.sqrt(count)));
-              const opacity = 0.22 + Math.min(0.6, count * 0.03);
-              return (
-                <path
-                  key={`${pair}-${i}`}
-                  d={pathD}
-                  fill="none"
-                  stroke="#86EFAC"
-                  strokeWidth={sw}
-                  strokeOpacity={opacity}
-                  strokeLinecap="round"
-                />
-              );
-            });
             if (!p1 || !p2 || count <= 0) return null; // Ensure points exist and count is positive
 
             const strokeWidth = Math.max(1, Math.log(count + 1) * 3); // Logarithmic scale for thickness, adjust multiplier for desired visual effect
+            const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y);
+            const strokeWidth = Math.max(1, Math.log(count + 1) * 4); // Logarithmic scale for thickness
             const strokeOpacity = 0.22 + Math.min(0.6, count * 0.03); // Keep opacity logic
 
             return (
@@ -320,26 +306,11 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
               const from = seqParts[idx];
               const p1 = pointByName[from];
               const p2 = pointByName[to];
-              if (!p1 || !p2) return null;
               if (!p1 || !p2) return null; // Ensure points exist
               const pairKey = `${from}->${to}`;
-              const pairCount = data.connections[pairKey] || 1;
-              return [...Array(Math.min(pairCount, 3))].map((_, i) => {
-                const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y, i, Math.max(1, pairCount));
-                const sw = 3 + Math.log(seqCount + 1);
-                return (
-                  <path
-                    key={`seq-highlight-${pairKey}-${i}`}
-                    d={pathD}
-                    fill="none"
-                    stroke="#0284c7"
-                    strokeWidth={sw}
-                    strokeOpacity={0.95}
-                    strokeLinecap="round"
-                  />
-                );
-              });
               const sw = Math.max(3, Math.log(seqCount + 1) * 4); // Adjust multiplier for desired thickness
+              const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y);
+              const sw = Math.max(3, Math.log(seqCount + 1) * 5); // Adjust multiplier for desired thickness
               return (
                 <path
                   key={`seq-highlight-${pairKey}`} // Key is now the pair, not pair-i

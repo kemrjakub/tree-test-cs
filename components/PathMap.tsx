@@ -285,9 +285,9 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
             return (
               <path
                 key={pair} // Key is now the pair, not pair-i
-                d={pathD}
+                d={pathD} // Use calculated thickness
                 fill="none"
-                stroke="#86EFAC"
+                stroke="#aa4bb3"
                 strokeWidth={strokeWidth} // Use calculated thickness
                 strokeOpacity={strokeOpacity}
                 strokeLinecap="round"
@@ -313,7 +313,7 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
                   key={`seq-highlight-${pairKey}`} // Key is now the pair, not pair-i
                   d={pathD}
                   fill="none"
-                  stroke="#0284c7"
+                  stroke="#135ee2"
                   strokeWidth={sw}
                   strokeOpacity={0.95}
                   strokeLinecap="round"
@@ -330,7 +330,7 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
             const correctAngle = (s.correct / s.total) * 360;
             return (
               <g key={p.name} className="cursor-help">
-                <circle cx={p.x} cy={p.y} r={radius} fill="#FCA5A5" />
+                <circle cx={p.x} cy={p.y} r={radius} fill="#721c7a" />
                 <path d={describeArc(p.x, p.y, radius, 0, correctAngle)} fill="#4ADE80" />
                 <circle cx={p.x} cy={p.y} r={radius} fill="none" stroke="white" strokeWidth="2.5" />
                 <title>{`${p.name}\n---\nPrůchodů celkem: ${s.total}\nSprávná cesta: ${s.correct}\nChybná cesta: ${s.total - s.correct}\nZvoleno jako cíl: ${s.nominated}x`}</title>

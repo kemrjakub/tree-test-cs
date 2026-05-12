@@ -119,7 +119,16 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
     const rootPoint = layout(categoryData, 0, 2 * Math.PI, 0);
     if (!rootPoint && needed.has(categoryData.name)) layout(categoryData, 0, 2 * Math.PI, 0);
 
-    return { points, stats, connections, sequences };
+    let mostCommonSequence: string | null = null;
+    let maxSeqCount = 0;
+    Object.entries(sequences).forEach(([seq, count]) => {
+      if (count > maxSeqCount) {
+        maxSeqCount = count;
+        mostCommonSequence = seq;
+      }
+    });
+
+    return { points, stats, connections, sequences, mostCommonSequence };
   }, [results, selectedQuestionIndex]);
 
   // Helper: estimate text width
@@ -189,9 +198,6 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
     return out;
   }, [data]);
 
-  // path helper for parallel curved paths (unchanged)
-  const makeCurvePath = (x1: number, y1: number, x2: number, y2: number, index: number, total: number) => {
-  // Simplified to draw a single curve with fixed offset
   // Simplified to draw a single curve with fixed offset for curve strength
   const makeCurvePath = (x1: number, y1: number, x2: number, y2: number) => {
     const midX = (x1 + x2) / 2;
@@ -199,13 +205,6 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
     const dx = x2 - x1;
     const dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-    const baseSpacing = 8;
-    const spreadFactor = Math.min(1.5, 1 + total / 10);
-    const offset = (index - (total - 1) / 2) * baseSpacing * spreadFactor;
-    const controlX = midX + nx * offset;
-    const controlY = midY + ny * offset;
     const nx = -dy / len; // Normal vector component
     const ny = dx / len;  // Normal vector component
     const curveOffsetMagnitude = 15; // Fixed offset for curve strength
@@ -279,7 +278,6 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
             // draw only if both points exist in the pruned layout
             if (!p1 || !p2 || count <= 0) return null; // Ensure points exist and count is positive
 
-            const strokeWidth = Math.max(1, Math.log(count + 1) * 3); // Logarithmic scale for thickness, adjust multiplier for desired visual effect
             const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y);
             const strokeWidth = Math.max(1, Math.log(count + 1) * 4); // Logarithmic scale for thickness
             const strokeOpacity = 0.22 + Math.min(0.6, count * 0.03); // Keep opacity logic
@@ -301,14 +299,13 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
           {data.mostCommonSequence ? (() => {
             const seq = data.mostCommonSequence!;
             const seqParts = seq.split('->');
-            const seqCount = (data as any).sequences?.[seq] || 1;
+            const seqCount = data.sequences[seq] || 1;
             return seqParts.slice(1).map((to, idx) => {
               const from = seqParts[idx];
               const p1 = pointByName[from];
               const p2 = pointByName[to];
               if (!p1 || !p2) return null; // Ensure points exist
               const pairKey = `${from}->${to}`;
-              const sw = Math.max(3, Math.log(seqCount + 1) * 4); // Adjust multiplier for desired thickness
               const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y);
               const sw = Math.max(3, Math.log(seqCount + 1) * 5); // Adjust multiplier for desired thickness
               return (

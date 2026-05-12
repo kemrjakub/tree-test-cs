@@ -279,7 +279,7 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
             if (!p1 || !p2 || count <= 0) return null; // Ensure points exist and count is positive
 
             const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y);
-            const strokeWidth = Math.max(1, Math.log(count + 1) * 4); // Logarithmic scale for thickness
+            const strokeWidth = Math.max(2, Math.log(count + 1) * 10); // Zvýraznění všech čar, větší váha pro frekventované
             const strokeOpacity = 0.22 + Math.min(0.6, count * 0.03); // Keep opacity logic
 
             return (
@@ -307,7 +307,7 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
               if (!p1 || !p2) return null; // Ensure points exist
               const pairKey = `${from}->${to}`;
               const pathD = makeCurvePath(p1.x, p1.y, p2.x, p2.y);
-              const sw = Math.max(3, Math.log(seqCount + 1) * 5); // Adjust multiplier for desired thickness
+              const sw = Math.max(6, Math.log(seqCount + 1) * 18); // Masivní zvýraznění nejčastější sekvence
               return (
                 <path
                   key={`seq-highlight-${pairKey}`} // Key is now the pair, not pair-i

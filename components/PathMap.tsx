@@ -191,6 +191,8 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
 
   // path helper for parallel curved paths (unchanged)
   const makeCurvePath = (x1: number, y1: number, x2: number, y2: number, index: number, total: number) => {
+  // Simplified to draw a single curve with fixed offset
+  const makeCurvePath = (x1: number, y1: number, x2: number, y2: number) => {
     const midX = (x1 + x2) / 2;
     const midY = (y1 + y2) / 2;
     const dx = x2 - x1;
@@ -203,6 +205,11 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
     const offset = (index - (total - 1) / 2) * baseSpacing * spreadFactor;
     const controlX = midX + nx * offset;
     const controlY = midY + ny * offset;
+    const nx = -dy / len; // Normal vector component
+    const ny = dx / len;  // Normal vector component
+    const curveOffsetMagnitude = 15; // Fixed offset for curve strength
+    const controlX = midX + nx * curveOffsetMagnitude;
+    const controlY = midY + ny * curveOffsetMagnitude;
     return `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
   };
 
@@ -286,6 +293,22 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
                 />
               );
             });
+            if (!p1 || !p2 || count <= 0) return null; // Ensure points exist and count is positive
+
+            const strokeWidth = Math.max(1, Math.log(count + 1) * 3); // Logarithmic scale for thickness, adjust multiplier for desired visual effect
+            const strokeOpacity = 0.22 + Math.min(0.6, count * 0.03); // Keep opacity logic
+
+            return (
+              <path
+                key={pair} // Key is now the pair, not pair-i
+                d={pathD}
+                fill="none"
+                stroke="#86EFAC"
+                strokeWidth={strokeWidth} // Use calculated thickness
+                strokeOpacity={strokeOpacity}
+                strokeLinecap="round"
+              />
+            );
           })}
 
           {/* highlight most common full sequence if any (kept simple) */}
@@ -298,6 +321,7 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
               const p1 = pointByName[from];
               const p2 = pointByName[to];
               if (!p1 || !p2) return null;
+              if (!p1 || !p2) return null; // Ensure points exist
               const pairKey = `${from}->${to}`;
               const pairCount = data.connections[pairKey] || 1;
               return [...Array(Math.min(pairCount, 3))].map((_, i) => {
@@ -315,6 +339,18 @@ const PathMap: React.FC<PathMapProps> = ({ results, selectedQuestionIndex = null
                   />
                 );
               });
+              const sw = Math.max(3, Math.log(seqCount + 1) * 4); // Adjust multiplier for desired thickness
+              return (
+                <path
+                  key={`seq-highlight-${pairKey}`} // Key is now the pair, not pair-i
+                  d={pathD}
+                  fill="none"
+                  stroke="#0284c7"
+                  strokeWidth={sw}
+                  strokeOpacity={0.95}
+                  strokeLinecap="round"
+                />
+              );
             });
           })() : null}
 
